@@ -13,7 +13,6 @@ import {
   Zap,
   Code2,
   Video,
-  ExternalLink,
 } from "lucide-react";
 
 export type FormatOption = "mp3" | "mp4" | "wav";
@@ -99,12 +98,12 @@ export default function AudioExtractorPage() {
         >
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center space-x-3">
-              <div className="rounded-xl bg-gradient-to-tr from-rose-600 to-rose-400 p-2 text-white shadow-lg shadow-rose-500/20">
+              <div className="rounded-xl bg-linear-to-tr from-rose-600 to-rose-400 p-2 text-white shadow-lg shadow-rose-500/20">
                 <Music className="h-5 w-5" />
               </div>
               <div>
                 <span
-                  className={`bg-gradient-to-r bg-clip-text text-lg font-bold tracking-tight ${
+                  className={`bg-linear-to-r bg-clip-text text-lg font-bold tracking-tight ${
                     isDark
                       ? "from-white to-slate-300 text-transparent"
                       : "from-slate-900 to-slate-700 text-transparent"
@@ -257,8 +256,8 @@ export default function AudioExtractorPage() {
                             format === fmt
                               ? "border-rose-500 bg-rose-500/10 text-rose-600"
                               : isDark
-                              ? "border-slate-800 text-slate-400 hover:border-slate-600"
-                              : "border-slate-200 text-slate-600 hover:border-slate-400"
+                                ? "border-slate-800 text-slate-400 hover:border-slate-600"
+                                : "border-slate-200 text-slate-600 hover:border-slate-400"
                           }`}
                         >
                           {fmt.toUpperCase()}
@@ -298,7 +297,7 @@ export default function AudioExtractorPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex w-full items-center justify-center space-x-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 py-3.5 font-semibold text-white shadow-lg shadow-rose-500/25 transition-all duration-200 hover:from-rose-700 hover:to-pink-700 disabled:opacity-50"
+                  className="flex w-full items-center justify-center space-x-2 rounded-xl bg-linear-to-r from-rose-600 to-pink-600 py-3.5 font-semibold text-white shadow-lg shadow-rose-500/25 transition-all duration-200 hover:from-rose-700 hover:to-pink-700 disabled:opacity-50"
                 >
                   {loading ? (
                     <>
