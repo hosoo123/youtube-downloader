@@ -24,6 +24,7 @@ app.post("/download", (req, res) => {
     "deno",
     "--remote-components",
     "ejs:github",
+    "--geo-bypass",
     "--no-playlist",
   ];
 

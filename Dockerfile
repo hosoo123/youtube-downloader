@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # yt-dlp-г системд суулгах
-RUN pip3 install --no-cache-dir yt-dlp --break-system-packages
+RUN pip3 install --no-cache-dir --upgrade yt-dlp --break-system-packages
 
 # Deno суулгах
 RUN curl -fsSL https://deno.land/install.sh | sh
