@@ -13,8 +13,8 @@ app.post("/extract", (req, res) => {
     return res.status(400).json({ error: "URL шаардлагатай" });
   }
 
-  // iOS Client болон бот шалгалтыг тойрох тохиргоо
-  const command = `yt-dlp --extractor-args "youtube:player_client=ios,android" --no-playlist -g -f "bestaudio/best" "${url}"`;
+  // TV Client болон Deno runtime ашиглаж бот шалгалтыг тойрно
+  const command = `yt-dlp --js-runtimes deno --extractor-args "youtube:player_client=tvhtml5,ios" --no-playlist -g -f "bestaudio/best" "${url}"`;
 
   exec(command, (error, stdout, stderr) => {
     if (error) {
