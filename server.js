@@ -13,13 +13,16 @@ app.post("/extract", (req, res) => {
     return res.status(400).json({ error: "URL шаардлагатай" });
   }
 
-  // yt-dlp ашиглан шууд татах линк гаргах
-  exec(`yt-dlp -g -f "bestaudio/best" "${url}"`, (error, stdout, stderr) => {
+  // YouTube-ийн бот блокоос зайлсхийх тусгай аргументууд нэмсэн
+  const command = `yt-dlp --no-playlist --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -g -f "bestaudio/best" "${url}"`;
+
+  exec(command, (error, stdout, stderr) => {
     if (error) {
       console.error("Exec error:", stderr);
-      return res
-        .status(500)
-        .json({ error: "Аудио линк гаргахад алдаа гарлаа." });
+      return res.status(500).json({ 
+        error: "Аудио линк гаргахад алдаа гарлаа.", 
+        details: stderr 
+      });
     }
     const downloadUrl = stdout.trim();
     res.json({ downloadUrl });
