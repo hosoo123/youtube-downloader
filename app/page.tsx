@@ -9,26 +9,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Линкийг шууд файл болгож татуулах функц
-  const forceDownload = async (downloadUrl: string, filename: string) => {
-    try {
-      const res = await fetch(downloadUrl);
-      const blob = await res.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(blobUrl);
-    } catch {
-      // Хэрэв CORS-оос болж blob үүсэхгүй бол шууд татах линкээр нээнэ
-      window.location.href = downloadUrl;
-    }
-  };
-
   const handleDownload = async () => {
     if (!url) return;
     setLoading(true);
@@ -41,19 +21,23 @@ export default function Home() {
         body: JSON.stringify({ url, format, quality }),
       });
 
-      const data = await res.json();
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Алдаа гарлаа.");
+      }
 
-      if (!res.ok) throw new Error(data.error);
+      // Файлыг дамжуулж аваад шууд файл болгон татуулах
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `youtube-${Date.now()}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
 
-      // Блоб хүлээлгүйгээр шууд татах линк рүү үсэргэх/татуулах
-      const link = document.createElement("a");
-      link.href = data.downloadUrl;
-      link.setAttribute("download", `youtube-download.${format}`);
-      link.setAttribute("target", "_blank");
-      link.setAttribute("rel", "noopener noreferrer");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -69,10 +53,10 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-slate-900 text-white">
       <div className="w-full max-w-md space-y-4 bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
         <h1 className="text-2xl font-bold text-center">YouTube Downloader</h1>
-
+        
         <input
           type="text"
-          placeholder="YouTube видео линк оруулна уу..."
+          placeholder="YouTube бичлэгийн линк оруулах..."
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           className="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-blue-500"
@@ -85,9 +69,7 @@ export default function Home() {
               key={fmt}
               onClick={() => setFormat(fmt)}
               className={`flex-1 py-2 rounded-lg font-medium uppercase transition ${
-                format === fmt
-                  ? "bg-blue-600 text-white"
-                  : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                format === fmt ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-300 hover:bg-slate-600"
               }`}
             >
               {fmt}
@@ -103,9 +85,7 @@ export default function Home() {
                 key={q}
                 onClick={() => setQuality(q)}
                 className={`flex-1 py-1.5 text-sm rounded-lg border transition ${
-                  quality === q
-                    ? "border-blue-500 bg-blue-500/10 text-blue-400"
-                    : "border-slate-700 text-slate-400"
+                  quality === q ? "border-blue-500 bg-blue-500/10 text-blue-400" : "border-slate-700 text-slate-400"
                 }`}
               >
                 {q === "best" ? "Хамгийн сайн" : q}
@@ -119,7 +99,7 @@ export default function Home() {
           disabled={loading || !url}
           className="w-full py-3 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 font-semibold rounded-lg transition"
         >
-          {loading ? "Боловсруулж байна..." : "Татах"}
+          {loading ? "Файл бэлдэж байна..." : "Татах"}
         </button>
 
         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
