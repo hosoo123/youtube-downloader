@@ -19,7 +19,17 @@ app.post("/download", (req, res) => {
   const uniqueId = Date.now();
   const outputTemplate = path.join("/tmp", `video-${uniqueId}.%(ext)s`);
 
-  let args = ["--js-runtimes", "deno", "--cookies", "cookies.txt", "--no-playlist"];
+  let args = [
+    "--js-runtimes",
+    "deno",
+    "--remote-components",
+    "ejs:github",
+    "--no-playlist",
+  ];
+
+  if (fs.existsSync("cookies.txt")) {
+    args.push("--cookies", "cookies.txt");
+  }
 
   if (format === "mp3") {
     let q = "5";
@@ -28,17 +38,34 @@ app.post("/download", (req, res) => {
     else if (quality === "192k") q = "2";
     else if (quality === "128k") q = "5";
 
-    args.push("-f", "bestaudio/best", "-x", "--audio-format", "mp3", "--audio-quality", q);
+    args.push(
+      "-f",
+      "bestaudio/best",
+      "-x",
+      "--audio-format",
+      "mp3",
+      "--audio-quality",
+      q,
+    );
   } else if (format === "wav") {
     args.push("-f", "bestaudio/best", "-x", "--audio-format", "wav");
   } else if (format === "mp4") {
     let formatOption = "bestvideo+bestaudio/best";
-    if (quality === "4k") formatOption = "bestvideo[height<=2160]+bestaudio/best[height<=2160]/best";
-    else if (quality === "2k") formatOption = "bestvideo[height<=1440]+bestaudio/best[height<=1440]/best";
-    else if (quality === "1080p") formatOption = "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best";
-    else if (quality === "720p") formatOption = "bestvideo[height<=720]+bestaudio/best[height<=720]/best";
-    else if (quality === "480p") formatOption = "bestvideo[height<=480]+bestaudio/best[height<=480]/best";
-    else if (quality === "360p") formatOption = "bestvideo[height<=360]+bestaudio/best[height<=360]/best";
+    if (quality === "4k")
+      formatOption =
+        "bestvideo[height<=2160]+bestaudio/best[height<=2160]/best";
+    else if (quality === "2k")
+      formatOption =
+        "bestvideo[height<=1440]+bestaudio/best[height<=1440]/best";
+    else if (quality === "1080p")
+      formatOption =
+        "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best";
+    else if (quality === "720p")
+      formatOption = "bestvideo[height<=720]+bestaudio/best[height<=720]/best";
+    else if (quality === "480p")
+      formatOption = "bestvideo[height<=480]+bestaudio/best[height<=480]/best";
+    else if (quality === "360p")
+      formatOption = "bestvideo[height<=360]+bestaudio/best[height<=360]/best";
 
     args.push("-f", formatOption, "--merge-output-format", "mp4");
   }
@@ -61,13 +88,14 @@ app.post("/download", (req, res) => {
       return res.status(500).json({ error: "Татахад алдаа гарлаа." });
     }
 
-    // Татагдсан файлын нэрийг олох (/tmp фолдер дотроос)
     fs.readdir("/tmp", (err, files) => {
       if (err) {
         return res.status(500).json({ error: "Файл уншихад алдаа гарлаа." });
       }
 
-      const downloadedFile = files.find((f) => f.startsWith(`video-${uniqueId}`));
+      const downloadedFile = files.find((f) =>
+        f.startsWith(`video-${uniqueId}`),
+      );
 
       if (!downloadedFile) {
         return res.status(404).json({ error: "Файл олдсонгүй." });
@@ -77,8 +105,11 @@ app.post("/download", (req, res) => {
       const stat = fs.statSync(filePath);
 
       res.setHeader("Content-Length", stat.size);
-      res.setHeader("Content-Disposition", `attachment; filename="youtube-${uniqueId}.${ext}"`);
-      
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="youtube-${uniqueId}.${ext}"`,
+      );
+
       if (format === "mp3") res.setHeader("Content-Type", "audio/mpeg");
       else if (format === "wav") res.setHeader("Content-Type", "audio/wav");
       else res.setHeader("Content-Type", "video/mp4");
@@ -92,7 +123,7 @@ app.post("/download", (req, res) => {
 
       readStream.on("error", (streamErr) => {
         console.error(streamErr);
-        res.status-error && res.status(500).json({ error: "Файл илгээхэд алдаа гарлаа." });
+        res.status(500).json({ error: "Файл илгээхэд алдаа гарлаа." });
       });
     });
   });
