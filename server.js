@@ -13,8 +13,8 @@ app.post("/extract", (req, res) => {
     return res.status(400).json({ error: "URL шаардлагатай" });
   }
 
-  // TV Client болон Deno runtime ашиглаж бот шалгалтыг тойрно
-  const command = `yt-dlp --js-runtimes deno --extractor-args "youtube:player_client=tvhtml5,ios" --no-playlist -g -f "bestaudio/best" "${url}"`;
+  // Render дээр үүссэн cookies.txt-ийг зааж өгнө
+  const command = `yt-dlp --js-runtimes deno --cookies cookies.txt --no-playlist -g -f "bestaudio/best" "${url}"`;
 
   exec(command, (error, stdout, stderr) => {
     if (error) {
