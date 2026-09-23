@@ -1,56 +1,99 @@
 import { NextRequest, NextResponse } from "next/server";
-import ytdl from "@distube/ytdl-core";
 
-type FormatOption = "mp3" | "mp4" | "wav";
+// RapidAPI-аас ирэх файлын линкийн бүтэц
+interface DownloadItem {
+  quality?: string;
+  isAudio?: boolean;
+  format?: string;
+  link?: string;
+}
+
+// RapidAPI хариултын бүтэц
+interface RapidApiResponse {
+  error?: boolean;
+  title?: string;
+  links?: DownloadItem[];
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const { url, format = "mp3" } = (await req.json()) as {
-      url: string;
-      format: FormatOption;
-    };
+    const { url, format = "mp3" } = await req.json();
 
-    if (!url || !ytdl.validateURL(url)) {
+    if (!url) {
       return NextResponse.json(
-        { error: "Зөв YouTube видео линк оруулна уу!" },
+        { error: "YouTube линк оруулна уу." },
         { status: 400 },
       );
     }
 
-    const info = await ytdl.getInfo(url);
-    const rawTitle = info.videoDetails.title;
-    const cleanTitle = rawTitle.replace(/[^\w\s-]/gi, "").trim() || "media";
+    const apiKey = process.env.RAPIDAPI_KEY;
 
-    // MP4 бол видео+аудио, бусад нь зөвхөн аудио
-    const streamOptions: ytdl.downloadOptions =
-      format === "mp4"
-        ? { quality: "highestvideo", filter: "audioandvideo" }
-        : { quality: "highestaudio", filter: "audioonly" };
-
-    const mediaStream = ytdl(url, streamOptions);
-
-    // Header Content-Type тохируулах
-    let contentType = "audio/mpeg";
-    if (format === "mp4") {
-      contentType = "video/mp4";
-    } else if (format === "wav") {
-      contentType = "audio/wav";
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "RAPIDAPI_KEY тохируулагдаагүй байна." },
+        { status: 500 },
+      );
     }
 
-    const encodedFilename = encodeURIComponent(`${cleanTitle}.${format}`);
-
-    return new NextResponse(mediaStream as unknown as ReadableStream, {
+    const options = {
+      method: "GET",
       headers: {
-        "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`,
+        "x-rapidapi-key": apiKey,
+        "x-rapidapi-host": "social-media-video-downloader.p.rapidapi.com",
       },
+    };
+
+    const apiUrl = `https://social-media-video-downloader.p.rapidapi.com/smvd/get/all?url=${encodeURIComponent(
+      url,
+    )}`;
+
+    const response = await fetch(apiUrl, options);
+    const data = (await response.json()) as RapidApiResponse;
+
+    if (!response.ok || !data || data.error) {
+      return NextResponse.json(
+        { error: "Бичлэгийн мэдээлэл авахад алдаа гарлаа. Линкээ шалгана уу." },
+        { status: 400 },
+      );
+    }
+
+    // Аудио эсвэл видео линкийг шүүж авах (any-гүйгээр)
+    let downloadLink = "";
+
+    if (format === "mp4") {
+      downloadLink =
+        data.links?.find(
+          (item: DownloadItem) =>
+            item.quality === "hd" || item.quality === "sd",
+        )?.link ||
+        data.links?.[0]?.link ||
+        "";
+    } else {
+      // Audio / MP3
+      downloadLink =
+        data.links?.find(
+          (item: DownloadItem) => item.isAudio || item.format === "mp3",
+        )?.link ||
+        data.links?.[0]?.link ||
+        "";
+    }
+
+    if (!downloadLink) {
+      return NextResponse.json(
+        { error: "Татах боломжтой файлын линк олдсонгүй." },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      downloadUrl: downloadLink,
+      title: data.title || "audio",
     });
   } catch (error: unknown) {
     console.error("Download Route Error:", error);
-    const message =
-      error instanceof Error ? error.message : "Тодорхойгүй алдаа";
     return NextResponse.json(
-      { error: `Файл хөрвүүлж татахад алдаа гарлаа: ${message}` },
+      { error: "Серверт алдаа гарлаа. Дахин залгаж үзнэ үү." },
       { status: 500 },
     );
   }

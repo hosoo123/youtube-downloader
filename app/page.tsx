@@ -13,8 +13,11 @@ import {
   Zap,
   Code2,
   Video,
+  ExternalLink,
 } from "lucide-react";
-import { FormatOption, AudioBitrate } from "./types";
+
+export type FormatOption = "mp3" | "mp4" | "wav";
+export type AudioBitrate = "128" | "192" | "256" | "320";
 
 export default function AudioExtractorPage() {
   const [isDark, setIsDark] = useState<boolean>(true);
@@ -49,20 +52,22 @@ export default function AudioExtractorPage() {
         body: JSON.stringify({ url, format, bitrate }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
         throw new Error(data.error || "Татахад алдаа гарлаа.");
       }
 
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = `youtube-download.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(downloadUrl);
+      if (data.downloadUrl) {
+        // Шууд файлаа браузер дээр татаж эхлүүлэх
+        const a = document.createElement("a");
+        a.href = data.downloadUrl;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -75,20 +80,45 @@ export default function AudioExtractorPage() {
   };
 
   return (
-    <div className={isDark ? "dark" : ""}>
-      <div className="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-300">
-        {/* Navbar */}
-        <nav className="border-b border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md sticky top-0 z-50">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div
+      className={`min-h-screen transition-colors duration-300 ${
+        isDark ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
+      }`}
+    >
+      <div
+        className={`min-h-screen bg-[radial-gradient(circle_at_top,rgba(244,114,182,0.18),transparent_22%),radial-gradient(circle_at_bottom,rgba(59,130,246,0.12),transparent_20%)] transition-colors duration-300 ${
+          isDark ? "bg-slate-950" : "bg-slate-50"
+        }`}
+      >
+        <nav
+          className={`sticky top-0 z-50 border-b backdrop-blur-xl ${
+            isDark
+              ? "border-slate-800 bg-slate-900/70"
+              : "border-slate-200/80 bg-white/70"
+          }`}
+        >
+          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center space-x-3">
-              <div className="bg-linear-to-tr from-rose-600 to-rose-400 text-white p-2 rounded-xl shadow-lg shadow-rose-500/20">
-                <Music className="w-5 h-5" />
+              <div className="rounded-xl bg-gradient-to-tr from-rose-600 to-rose-400 p-2 text-white shadow-lg shadow-rose-500/20">
+                <Music className="h-5 w-5" />
               </div>
               <div>
-                <span className="font-bold text-lg tracking-tight bg-linear-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+                <span
+                  className={`bg-gradient-to-r bg-clip-text text-lg font-bold tracking-tight ${
+                    isDark
+                      ? "from-white to-slate-300 text-transparent"
+                      : "from-slate-900 to-slate-700 text-transparent"
+                  }`}
+                >
                   MediaExtract
                 </span>
-                <span className="text-xs bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold px-2 py-0.5 rounded-full ml-2">
+                <span
+                  className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    isDark
+                      ? "bg-rose-500/20 text-rose-400"
+                      : "bg-rose-100 text-rose-600"
+                  }`}
+                >
                   MN
                 </span>
               </div>
@@ -98,46 +128,88 @@ export default function AudioExtractorPage() {
               <button
                 type="button"
                 onClick={() => setIsDark(!isDark)}
-                className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                aria-label="Toggle theme"
+                className={`relative inline-flex h-9 w-20 items-center rounded-full border p-1.5 shadow-inner transition-all duration-300 ${
+                  isDark
+                    ? "border-slate-700 bg-slate-800 shadow-slate-950/60"
+                    : "border-slate-200 bg-slate-100 shadow-slate-200/80 hover:shadow-slate-300"
+                }`}
               >
-                {isDark ? (
-                  <Sun className="w-4 h-4" />
-                ) : (
-                  <Moon className="w-4 h-4" />
-                )}
+                <span
+                  className={`absolute top-1.5 flex h-6 w-6 items-center justify-center rounded-full shadow-md transition-all duration-300 ${
+                    isDark
+                      ? "right-1.5 bg-slate-700 text-sky-400"
+                      : "left-1.5 bg-white text-amber-500"
+                  }`}
+                >
+                  {isDark ? (
+                    <Moon className="h-3.5 w-3.5" />
+                  ) : (
+                    <Sun className="h-3.5 w-3.5" />
+                  )}
+                </span>
+
+                <span className="flex w-full items-center justify-between px-2 text-[10px]">
+                  <Sun
+                    className={`h-3.5 w-3.5 ${
+                      isDark ? "text-amber-500/50" : "text-amber-500"
+                    }`}
+                  />
+                  <Moon
+                    className={`h-3.5 w-3.5 ${
+                      isDark ? "text-sky-400" : "text-sky-400/50"
+                    }`}
+                  />
+                </span>
               </button>
             </div>
           </div>
         </nav>
 
-        {/* Main Body */}
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-          {/* Header Banner */}
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <main className="mx-auto max-w-6xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl space-y-3 text-center">
+            <div
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${
+                isDark
+                  ? "border-slate-700 bg-slate-800 text-slate-300"
+                  : "border-slate-200 bg-slate-100 text-slate-600"
+              }`}
+            >
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               Зар сурталчилгаагүй, Шууд MP3 / MP4 / WAV Татагч
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
               YouTube Аудио & Видео Хөрвүүлэгч
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base">
+            <p
+              className={`text-sm sm:text-base ${
+                isDark ? "text-slate-400" : "text-slate-500"
+              }`}
+            >
               Линкээ оруулаад MP3, MP4 эсвэл WAV форматаар шууд хуулж аваарай.
             </p>
           </div>
 
-          {/* Form Card */}
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white/80 dark:bg-slate-900/75 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+          <div className="mx-auto max-w-2xl">
+            <div
+              className={`rounded-2xl border p-6 shadow-xl backdrop-blur-md sm:p-8 ${
+                isDark
+                  ? "border-slate-800 bg-slate-900/75"
+                  : "border-slate-200 bg-white/80"
+              }`}
+            >
               <form onSubmit={handleDownload} className="space-y-6">
-                {/* Input Box */}
                 <div className="space-y-2">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <label
+                    className={`block text-xs font-semibold uppercase tracking-wider ${
+                      isDark ? "text-slate-400" : "text-slate-500"
+                    }`}
+                  >
                     YouTube Бичлэгийн Линк
                   </label>
                   <div className="relative flex items-center">
                     <div className="absolute left-4 text-slate-400">
-                      <LinkIcon className="w-5 h-5" />
+                      <LinkIcon className="h-5 w-5" />
                     </div>
                     <input
                       type="url"
@@ -145,23 +217,34 @@ export default function AudioExtractorPage() {
                       onChange={(e) => setUrl(e.target.value)}
                       placeholder="https://www.youtube.com/watch?v=..."
                       required
-                      className="w-full pl-12 pr-28 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition text-sm font-medium"
+                      className={`w-full rounded-xl border py-3.5 pl-12 pr-28 text-sm font-medium outline-none transition focus:border-transparent focus:ring-2 focus:ring-rose-500 ${
+                        isDark
+                          ? "border-slate-700 bg-slate-900 text-slate-100"
+                          : "border-slate-200 bg-slate-50 text-slate-900"
+                      }`}
                     />
                     <button
                       type="button"
                       onClick={handlePaste}
-                      className="absolute right-3 px-3 py-1.5 text-xs font-medium bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg transition text-slate-700 dark:text-slate-300 flex items-center gap-1"
+                      className={`absolute right-3 flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                        isDark
+                          ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                      }`}
                     >
-                      <Clipboard className="w-3.5 h-3.5" />
+                      <Clipboard className="h-3.5 w-3.5" />
                       Буулгах
                     </button>
                   </div>
                 </div>
 
-                {/* Quality & Format Options */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                    <label
+                      className={`mb-2 block text-xs font-semibold uppercase tracking-wider ${
+                        isDark ? "text-slate-400" : "text-slate-500"
+                      }`}
+                    >
                       Формат (Format)
                     </label>
                     <div className="grid grid-cols-3 gap-2">
@@ -170,10 +253,12 @@ export default function AudioExtractorPage() {
                           key={fmt}
                           type="button"
                           onClick={() => setFormat(fmt)}
-                          className={`px-3 py-2 text-xs font-bold rounded-lg border transition ${
+                          className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${
                             format === fmt
-                              ? "border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                              : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-400"
+                              ? "border-rose-500 bg-rose-500/10 text-rose-600"
+                              : isDark
+                              ? "border-slate-800 text-slate-400 hover:border-slate-600"
+                              : "border-slate-200 text-slate-600 hover:border-slate-400"
                           }`}
                         >
                           {fmt.toUpperCase()}
@@ -183,7 +268,11 @@ export default function AudioExtractorPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                    <label
+                      className={`mb-2 block text-xs font-semibold uppercase tracking-wider ${
+                        isDark ? "text-slate-400" : "text-slate-500"
+                      }`}
+                    >
                       Чанар (Bitrate / Quality)
                     </label>
                     <select
@@ -192,7 +281,11 @@ export default function AudioExtractorPage() {
                         setBitrate(e.target.value as AudioBitrate)
                       }
                       disabled={format === "mp4"}
-                      className="w-full py-2 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium focus:ring-2 focus:ring-rose-500 outline-none disabled:opacity-50"
+                      className={`w-full rounded-lg border px-3 py-2 text-xs font-medium outline-none focus:ring-2 focus:ring-rose-500 disabled:opacity-50 ${
+                        isDark
+                          ? "border-slate-700 bg-slate-900 text-slate-100"
+                          : "border-slate-200 bg-slate-50 text-slate-900"
+                      }`}
                     >
                       <option value="320">320 kbps (Хамгийн дээд)</option>
                       <option value="256">256 kbps (Өндөр)</option>
@@ -202,68 +295,95 @@ export default function AudioExtractorPage() {
                   </div>
                 </div>
 
-                {/* Submit Button */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-linear-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-rose-500/25 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50"
+                  className="flex w-full items-center justify-center space-x-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 py-3.5 font-semibold text-white shadow-lg shadow-rose-500/25 transition-all duration-200 hover:from-rose-700 hover:to-pink-700 disabled:opacity-50"
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="h-5 w-5 animate-spin" />
                       <span>Боловсруулж байна...</span>
                     </>
                   ) : format === "mp4" ? (
                     <>
-                      <Video className="w-5 h-5" />
+                      <Video className="h-5 w-5" />
                       <span>MP4 Видео Татах</span>
                     </>
                   ) : (
                     <>
-                      <DownloadCloud className="w-5 h-5" />
+                      <DownloadCloud className="h-5 w-5" />
                       <span>{format.toUpperCase()} Татах</span>
                     </>
                   )}
                 </button>
               </form>
 
-              {/* Error Message */}
               {error && (
-                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-500 text-center font-medium">
+                <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-xs font-medium text-red-500">
                   {error}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Features list */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto pt-4">
-            <div className="bg-white/80 dark:bg-slate-900/75 border border-slate-200 dark:border-slate-800 p-5 rounded-xl space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5" />
+          <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-3">
+            <div
+              className={`rounded-xl border p-5 ${
+                isDark
+                  ? "border-slate-800 bg-slate-900/75"
+                  : "border-slate-200 bg-white/80"
+              }`}
+            >
+              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-500">
+                <ShieldCheck className="h-5 w-5" />
               </div>
-              <h3 className="font-bold text-sm">Зар ба Спамгүй</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <h3 className="text-sm font-bold">Зар ба Спамгүй</h3>
+              <p
+                className={`mt-2 text-xs ${
+                  isDark ? "text-slate-400" : "text-slate-500"
+                }`}
+              >
                 Байнгын pop-up нээгддэг сурталчилгаа болон аюултай линк байхгүй.
               </p>
             </div>
 
-            <div className="bg-white/80 dark:bg-slate-900/75 border border-slate-200 dark:border-slate-800 p-5 rounded-xl space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-500 flex items-center justify-center">
-                <Zap className="w-5 h-5" />
+            <div
+              className={`rounded-xl border p-5 ${
+                isDark
+                  ? "border-slate-800 bg-slate-900/75"
+                  : "border-slate-200 bg-white/80"
+              }`}
+            >
+              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-500">
+                <Zap className="h-5 w-5" />
               </div>
-              <h3 className="font-bold text-sm">Түргэн Шуурхай</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <h3 className="text-sm font-bold">Түргэн Шуурхай</h3>
+              <p
+                className={`mt-2 text-xs ${
+                  isDark ? "text-slate-400" : "text-slate-500"
+                }`}
+              >
                 Ашиглахад хялбар, хурдан шуурхай татаж авах боломжтой.
               </p>
             </div>
 
-            <div className="bg-white/80 dark:bg-slate-900/75 border border-slate-200 dark:border-slate-800 p-5 rounded-xl space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                <Code2 className="w-5 h-5" />
+            <div
+              className={`rounded-xl border p-5 ${
+                isDark
+                  ? "border-slate-800 bg-slate-900/75"
+                  : "border-slate-200 bg-white/80"
+              }`}
+            >
+              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+                <Code2 className="h-5 w-5" />
               </div>
-              <h3 className="font-bold text-sm">MP3 / MP4 / WAV</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <h3 className="text-sm font-bold">MP3 / MP4 / WAV</h3>
+              <p
+                className={`mt-2 text-xs ${
+                  isDark ? "text-slate-400" : "text-slate-500"
+                }`}
+              >
                 Дуу болон бичлэгийг хүссэн форматаараа авах боломжтой.
               </p>
             </div>
