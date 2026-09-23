@@ -1,5 +1,5 @@
 import express from "express";
-import { exec } from "child_process";
+import { spawn } from "child_process";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
@@ -45,18 +45,26 @@ app.post("/download", (req, res) => {
 
   args.push("-o", outputTemplate, url);
 
-  const command = `yt-dlp ${args.join(" ")}`;
+  console.log(`Starting yt-dlp with args:`, args);
 
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`yt-dlp error: ${stderr}`);
+  const ytDlpProcess = spawn("yt-dlp", args);
+
+  let stderrData = "";
+
+  ytDlpProcess.stderr.on("data", (data) => {
+    stderrData += data.toString();
+  });
+
+  ytDlpProcess.on("close", (code) => {
+    if (code !== 0) {
+      console.error(`yt-dlp error: ${stderrData}`);
       return res.status(500).json({ error: "Татахад алдаа гарлаа." });
     }
 
     // Татагдсан файлын нэрийг олох (/tmp фолдер дотроос)
     fs.readdir("/tmp", (err, files) => {
       if (err) {
-        return res.status(500).json({ error: "Файл орилоход алдаа гарлаа." });
+        return res.status(500).json({ error: "Файл уншихад алдаа гарлаа." });
       }
 
       const downloadedFile = files.find((f) => f.startsWith(`video-${uniqueId}`));
@@ -79,13 +87,12 @@ app.post("/download", (req, res) => {
       readStream.pipe(res);
 
       readStream.on("end", () => {
-        // Татаж дууссаны дараа сервер дээрх түр файлыг устгах
         fs.unlink(filePath, () => {});
       });
 
       readStream.on("error", (streamErr) => {
         console.error(streamErr);
-        res.status(500).json({ error: "Файл илгээхэд алдаа гарлаа." });
+        res.status-error && res.status(500).json({ error: "Файл илгээхэд алдаа гарлаа." });
       });
     });
   });
