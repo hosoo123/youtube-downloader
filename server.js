@@ -13,44 +13,63 @@ app.post("/download", (req, res) => {
     return res.status(400).json({ error: "URL шаардлагатай" });
   }
 
-  // Файлын өextension болон нэрийг тохируулах
   const ext = format || "mp3";
   const filename = `youtube-download.${ext}`;
 
   let formatOption = "best";
+  let extraArgs = [];
 
-  if (format === "mp3" || format === "wav") {
+  // 1. MP3 эсвэл WAV Аудио чанарын тохиргоо
+  if (format === "mp3") {
+    // quality: 320k (0 - хамгийн сайн), 256k (1), 192k (2), 128k (5)
+    let q = "0";
+    if (quality === "256k") q = "1";
+    if (quality === "192k") q = "2";
+    if (quality === "128k") q = "5";
+
     formatOption = "bestaudio/best";
-  } else if (format === "mp4") {
-    if (quality === "1080p") {
+    extraArgs = ["-x", "--audio-format", "mp3", "--audio-quality", q];
+  } else if (format === "wav") {
+    formatOption = "bestaudio/best";
+    extraArgs = ["-x", "--audio-format", "wav"];
+  } 
+  // 2. MP4 Видео чанарын тохиргоо (4K, 2K, 1080p, 720p, 480p, 360p)
+  else if (format === "mp4") {
+    if (quality === "4k") {
+      formatOption = "bestvideo[height<=2160]+bestaudio/best[height<=2160]/best";
+    } else if (quality === "2k") {
+      formatOption = "bestvideo[height<=1440]+bestaudio/best[height<=1440]/best";
+    } else if (quality === "1080p") {
       formatOption = "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best";
     } else if (quality === "720p") {
       formatOption = "bestvideo[height<=720]+bestaudio/best[height<=720]/best";
+    } else if (quality === "480p") {
+      formatOption = "bestvideo[height<=480]+bestaudio/best[height<=480]/best";
+    } else if (quality === "360p") {
+      formatOption = "bestvideo[height<=360]+bestaudio/best[height<=360]/best";
     } else {
       formatOption = "bestvideo+bestaudio/best";
     }
   }
 
-  // Браузерт заавал файл болгож татуулах Header өгнө
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-  
+
   if (format === "mp3") res.setHeader("Content-Type", "audio/mpeg");
   else if (format === "wav") res.setHeader("Content-Type", "audio/wav");
   else res.setHeader("Content-Type", "video/mp4");
 
-  // yt-dlp-г stdout руу шууд дамжуулахаар spawn хийнэ (-o -)
   const args = [
     "--js-runtimes", "deno",
     "--cookies", "cookies.txt",
     "--no-playlist",
     "-f", formatOption,
+    ...extraArgs,
     "-o", "-",
     url
   ];
 
   const ytdlp = spawn("yt-dlp", args);
 
-  // Файлыг сервер рүү шууд Stream хийж дамжуулна
   ytdlp.stdout.pipe(res);
 
   ytdlp.stderr.on("data", (data) => {

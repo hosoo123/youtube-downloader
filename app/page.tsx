@@ -5,9 +5,17 @@ import { useState } from "react";
 export default function Home() {
   const [url, setUrl] = useState("");
   const [format, setFormat] = useState<"mp3" | "mp4" | "wav">("mp3");
-  const [quality, setQuality] = useState<"best" | "1080p" | "720p">("best");
+  const [quality, setQuality] = useState<string>("320k");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Формат солигдох үед үндсэн чанарыг тохируулах
+  const handleFormatChange = (newFormat: "mp3" | "mp4" | "wav") => {
+    setFormat(newFormat);
+    if (newFormat === "mp3") setQuality("320k");
+    else if (newFormat === "mp4") setQuality("1080p");
+    else if (newFormat === "wav") setQuality("best");
+  };
 
   const handleDownload = async () => {
     if (!url) return;
@@ -26,7 +34,6 @@ export default function Home() {
         throw new Error(data.error || "Алдаа гарлаа.");
       }
 
-      // Файлыг дамжуулж аваад шууд файл болгон татуулах
       const blob = await res.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       
@@ -67,7 +74,7 @@ export default function Home() {
           {(["mp3", "mp4", "wav"] as const).map((fmt) => (
             <button
               key={fmt}
-              onClick={() => setFormat(fmt)}
+              onClick={() => handleFormatChange(fmt)}
               className={`flex-1 py-2 rounded-lg font-medium uppercase transition ${
                 format === fmt ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-300 hover:bg-slate-600"
               }`}
@@ -77,21 +84,61 @@ export default function Home() {
           ))}
         </div>
 
-        {/* MP4 сонгосон үед чанар сонгох */}
-        {format === "mp4" && (
-          <div className="flex gap-2 pt-1">
-            {(["best", "1080p", "720p"] as const).map((q) => (
-              <button
-                key={q}
-                onClick={() => setQuality(q)}
-                className={`flex-1 py-1.5 text-sm rounded-lg border transition ${
-                  quality === q ? "border-blue-500 bg-blue-500/10 text-blue-400" : "border-slate-700 text-slate-400"
-                }`}
-              >
-                {q === "best" ? "Хамгийн сайн" : q}
-              </button>
-            ))}
+        {/* MP3 Чанар сонгох */}
+        {format === "mp3" && (
+          <div className="space-y-1">
+            <label className="text-xs text-slate-400">MP3 Аудио чанар:</label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { label: "320kbps", value: "320k" },
+                { label: "256kbps", value: "256k" },
+                { label: "192kbps", value: "192k" },
+                { label: "128kbps", value: "128k" },
+              ].map((q) => (
+                <button
+                  key={q.value}
+                  onClick={() => setQuality(q.value)}
+                  className={`py-1.5 text-xs rounded-lg border transition ${
+                    quality === q.value ? "border-blue-500 bg-blue-500/10 text-blue-400 font-semibold" : "border-slate-700 text-slate-400 hover:border-slate-600"
+                  }`}
+                >
+                  {q.label}
+                </button>
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* MP4 Видео чанар сонгох (4K, 2K, 1080p, 720p, 480p, 360p) */}
+        {format === "mp4" && (
+          <div className="space-y-1">
+            <label className="text-xs text-slate-400">MP4 Видео чанар:</label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                { label: "4K (2160p)", value: "4k" },
+                { label: "2K (1440p)", value: "2k" },
+                { label: "1080p HD", value: "1080p" },
+                { label: "720p HD", value: "720p" },
+                { label: "480p", value: "480p" },
+                { label: "360p", value: "360p" },
+              ].map((q) => (
+                <button
+                  key={q.value}
+                  onClick={() => setQuality(q.value)}
+                  className={`py-1.5 text-xs rounded-lg border transition ${
+                    quality === q.value ? "border-blue-500 bg-blue-500/10 text-blue-400 font-semibold" : "border-slate-700 text-slate-400 hover:border-slate-600"
+                  }`}
+                >
+                  {q.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* WAV сонгосон үед санамж */}
+        {format === "wav" && (
+          <p className="text-xs text-slate-400 text-center">WAV нь шахталтгүй Uncompressed форматын тул хамгийн дээд чанараараа татагдана.</p>
         )}
 
         <button
