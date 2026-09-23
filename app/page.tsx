@@ -15,7 +15,7 @@ export default function Home() {
       const res = await fetch(downloadUrl);
       const blob = await res.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-      
+
       const a = document.createElement("a");
       a.href = blobUrl;
       a.download = filename;
@@ -45,11 +45,15 @@ export default function Home() {
 
       if (!res.ok) throw new Error(data.error);
 
-      // Файлын нэр үүсгэж татуулна
-      const ext = format;
-      const filename = `download.${ext}`;
-      await forceDownload(data.downloadUrl, filename);
-
+      // Блоб хүлээлгүйгээр шууд татах линк рүү үсэргэх/татуулах
+      const link = document.createElement("a");
+      link.href = data.downloadUrl;
+      link.setAttribute("download", `youtube-download.${format}`);
+      link.setAttribute("target", "_blank");
+      link.setAttribute("rel", "noopener noreferrer");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -65,7 +69,7 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-slate-900 text-white">
       <div className="w-full max-w-md space-y-4 bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
         <h1 className="text-2xl font-bold text-center">YouTube Downloader</h1>
-        
+
         <input
           type="text"
           placeholder="YouTube видео линк оруулна уу..."
@@ -81,7 +85,9 @@ export default function Home() {
               key={fmt}
               onClick={() => setFormat(fmt)}
               className={`flex-1 py-2 rounded-lg font-medium uppercase transition ${
-                format === fmt ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                format === fmt
+                  ? "bg-blue-600 text-white"
+                  : "bg-slate-700 text-slate-300 hover:bg-slate-600"
               }`}
             >
               {fmt}
@@ -97,7 +103,9 @@ export default function Home() {
                 key={q}
                 onClick={() => setQuality(q)}
                 className={`flex-1 py-1.5 text-sm rounded-lg border transition ${
-                  quality === q ? "border-blue-500 bg-blue-500/10 text-blue-400" : "border-slate-700 text-slate-400"
+                  quality === q
+                    ? "border-blue-500 bg-blue-500/10 text-blue-400"
+                    : "border-slate-700 text-slate-400"
                 }`}
               >
                 {q === "best" ? "Хамгийн сайн" : q}

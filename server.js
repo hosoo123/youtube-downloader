@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json());
 
 app.post("/extract", (req, res) => {
-  const { url, format, quality } = req.body; // format: 'mp3' | 'mp4' | 'wav'
+  const { url, format, quality } = req.body;
 
   if (!url) {
     return res.status(400).json({ error: "URL шаардлагатай" });
@@ -16,26 +16,26 @@ app.post("/extract", (req, res) => {
   let formatOption = "";
 
   if (format === "mp3" || format === "wav") {
-    formatOption = '-f "bestaudio/best"';
+    formatOption = '-f "ba/ba*"';
   } else if (format === "mp4") {
     if (quality === "1080p") {
-      formatOption = '-f "bestvideo[height<=1080]+bestaudio/best[height<=1080]"';
+      formatOption = '-f "bv*[height<=1080]+ba/b[height<=1080]/mp4"';
     } else if (quality === "720p") {
-      formatOption = '-f "bestvideo[height<=720]+bestaudio/best[height<=720]"';
+      formatOption = '-f "bv*[height<=720]+ba/b[height<=720]/mp4"';
     } else {
-      formatOption = '-f "bestvideo+bestaudio/best"';
+      formatOption = '-f "b/bv*+ba"';
     }
   }
 
-  const command = `yt-dlp --js-runtimes deno --cookies cookies.txt --no-playlist ${formatOption} -g "${url}"`;
+  // Хурдасгах аргументууд: --no-warnings --no-call-home --no-check-certificates
+  const command = `yt-dlp --js-runtimes deno --cookies cookies.txt --no-warnings --no-call-home --no-check-certificates --no-playlist ${formatOption} -g "${url}"`;
 
-  exec(command, (error, stdout, stderr) => {
+  exec(command, { timeout: 30000 }, (error, stdout, stderr) => {
     if (error) {
       console.error("Exec error:", stderr);
       return res.status(500).json({ error: "Татах линк гаргахад алдаа гарлаа." });
     }
     
-    // yt-dlp заримдаа видео + аудио 2 тусдаа линк буцаадаг тул эхний линкийг авна
     const urls = stdout.trim().split("\n");
     const downloadUrl = urls[0];
 
